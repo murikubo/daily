@@ -934,7 +934,7 @@ module.exports = (app) => {
             if (1 >= tempDate.toString().length) {
                 tempDate = `0${tempDate}`;
             }
-            let today = `${date.getFullYear()}${tempMonth1}${tempDate1}`;
+            let today = `${date.getFullYear()}${tempMonth}${tempDate}`;
 
             let manager = [];
             try {
