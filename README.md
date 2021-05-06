@@ -20,7 +20,8 @@
 - "CodeBeamer_Tracker_URL" : 업무일지 Tracker의 URL입니다.
 - "CodeBeamer_Tracker" : 업무일지 Tracker의 ```/tracker/ID``` 형식의 ID입니다.
 - "FingerChat_Error_Notice_Member_ID" : Bot 작동중 Error가 발생했을 시 DM으로 알림을 받을 FingerChat의 User ID입니다. Admin의 User ID를 입력하시면 됩니다.
-- "Use_Port, DB_Host, DB_Port, DB_User, DB_Password, DB_Database" : 각각 DB 접속정보입니다.
+- "Use_Port" : Bot을 기동시킬 Port번호입니다.
+- "DB_Host, DB_Port, DB_User, DB_Password, DB_Database" : 각각 DB 접속정보입니다.
 - "VERSION" : Bot의 Version 정보입니다.
 
 
