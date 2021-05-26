@@ -124,17 +124,18 @@ module.exports = (app) => {
                 }
 
                 case "time":
+                    const nowTime = await getUserTime(req.body.user_name);
                     actions = [
                         makeAction("취소", 'cancel'),
                         makeAction("변경", 'time_set'),
                     ];
                     attachments = [{
                         "title": "Notice 시간 변경",
+                        "text" : `현재 notice 시간 : ${nowTime}`,
                         "fields": [],
                         "actions": actions
                     }];
                     res.send({ username: "Daily Journal Bot", response_type: 'in_channel', attachments });
-                    break;
                     break;
 
             case "version":
@@ -518,7 +519,7 @@ module.exports = (app) => {
                         connection.release();
                         if (userYesNo[0].SUCCESS == '0') {
                             try {
-                                let [results] = await connection.query(`INSERT INTO dataInfo(ROLE, ID, LastItemID, LastModify, LastCreate, userID, month, userTime)VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, [`user`, `${req.body.submission.textprops}`, `${res.data.uri}`, `${date.getFullYear()}-${tempMonth}-${tempDate}`, `${date.getFullYear()}-${tempMonth}-${tempDate}`, `${req.body.user_id}`, `${tempMonth}`, 'A']);
+                                let [results] = await connection.query(`INSERT INTO dataInfo(ROLE, ID, LastItemID, LastModify, LastCreate, userID, month, userTime)VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, [`user`, `${req.body.submission.textprops}`, `${res.data.uri}`, `${date.getFullYear()}-${tempMonth}-${tempDate}`, `${date.getFullYear()}-${tempMonth}-${tempDate}`, `${req.body.user_id}`, `${tempMonth}`, '17:30']);
                                 connection.destroy();
                                 sendDM(req.body.user_id, `${req.body.submission.textprops}(${date.getFullYear()}.${tempMonth}) Item을 생성하였습니다.\n[Item 확인하기](${config.CodeBeamer_Tracker_Item_URL}${res.data.uri}) | [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
                             } catch (error) {
@@ -881,6 +882,32 @@ module.exports = (app) => {
         } catch (error) {
             console.log(error);
             message = `DB에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
+        }
+    }
+
+    const getUserTime = async (userName) => {
+        try {
+            let connection = await pool.getConnection(async conn => conn);
+            try {
+                let [userYesNo] = await connection.query(`SELECT EXISTS (SELECT * FROM dataInfo WHERE ID='${userName}') AS SUCCESS;`);
+                connection.release();
+                if (userYesNo[0].SUCCESS == '0') {
+                    return `Database에 User Data가 등록되어있지 않습니다. 먼저 Database에 User Info를 등록해주세요.`;
+                } else {
+                    try {
+                        let [results] = await connection.query(`SELECT userTime FROM dataInfo WHERE ID='${userName}';`);
+                        connection.destroy();
+                        return `${results[0].userTime}`;
+                    } catch (error) {
+                        return `에러가 발생하였습니다. 관리자에게 문의하세요.`;
+                    }
+                }
+            } catch (error) {
+                connection.destroy();
+                return `Query 에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
+            }
+        } catch (error) {
+            return `DB에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
         }
     }
 
