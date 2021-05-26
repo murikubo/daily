@@ -865,11 +865,11 @@ module.exports = (app) => {
                     message = `Database에 등록된 User가 없습니다.`
                 } else {
                     for (let i = 0; i < results.length; i++) {
-                        if(results[i].userTime == 'A'){
+/*                         if(results[i].userTime == 'A'){
                             results[i].userTime = '오후 5시 30분';
                         } else {
                             results[i].userTime = '오후 6시';
-                        }
+                        } */
                         userList.push(`| ${i + 1} | ${results[i].ID} | ${results[i].ROLE} | [${results[i].LastItemID}](${config.CodeBeamer_Tracker_Item_URL}${results[i].LastItemID}) | ${results[i].LastModify} | ${results[i].LastCreate} | ${results[i].userTime} |\n`);
                     }
                 }
