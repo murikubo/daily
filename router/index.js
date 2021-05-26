@@ -40,7 +40,7 @@ let actions = [
 ];
 
 module.exports = (app) => {
-    app.post('/dailyjournal', async (req, res) => {
+    app.post('/bot_test', async (req, res) => {
         let date = new Date();
         let reqOption = req.body.text;
         let tempString = reqOption.substring(0, 7);
@@ -78,7 +78,7 @@ module.exports = (app) => {
                     let connection = await pool.getConnection(async conn => conn);
                     try {
                         let [checkLastItemID] = await connection.query(`SELECT LastItemID, LastModify FROM dataInfo WHERE ID = '${req.body.user_name}';`);
-                        connection.release();
+                        connection.destroy();
                         if (checkLastItemID[0]) {
                             actions = [
                                 makeAction("새로운 Item 만들기", 'create'),
@@ -111,7 +111,7 @@ module.exports = (app) => {
                             response_type: "ephemeral",
                             username: "Daily Journal Bot"
                         });
-                        connection.release();
+                        connection.destroy();
                         break;
                     }
                 } catch (error) {
@@ -122,6 +122,20 @@ module.exports = (app) => {
                     });
                     break;
                 }
+
+                case "time":
+                    actions = [
+                        makeAction("취소", 'cancel'),
+                        makeAction("변경", 'time_set'),
+                    ];
+                    attachments = [{
+                        "title": "Notice 시간 변경",
+                        "fields": [],
+                        "actions": actions
+                    }];
+                    res.send({ username: "Daily Journal Bot", response_type: 'in_channel', attachments });
+                    break;
+                    break;
 
             case "version":
                 res.send({
@@ -244,7 +258,7 @@ module.exports = (app) => {
                 });
                 break;
 
-            case "time":
+            case "timetest":
                 const tempUserHomeTimeAB = await getUserHomeTime(req.body.user_name);
                 let timeToNotice;
                 if(tempUserHomeTimeAB == 'A'){
@@ -283,6 +297,12 @@ module.exports = (app) => {
                 });
                 break;
         }
+
+        app.post('/user_time_set', async (req, res) => {
+            userTimeSet(req.body.user_id, req.body.submission.text_username, req.body.submission.text_hours, req.body.submission.text_minutes);
+            res.send({ update: { props: { attachments } } });
+        });
+
         app.post('/six', async (req, res) => {
             await setUserTime(req.body.user_name, 'B');
             const attachments = [{
@@ -325,7 +345,7 @@ module.exports = (app) => {
                 let connection = await pool.getConnection(async conn => conn);
                 try {
                     let [userYesNo] = await connection.query(`SELECT EXISTS (SELECT * FROM dataInfo WHERE ID='${addedUserName}') AS SUCCESS;`);
-                    connection.release();
+                    connection.destroy();
                     if (userYesNo[0].SUCCESS == '0') {
                         const attachments = [{
                             "title": `해당 User **${addedUserName}**이(가) 존재하지 않습니다.`
@@ -340,7 +360,7 @@ module.exports = (app) => {
                     }
                 } catch (error) {
                     message = `Query 에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
-                    connection.release();
+                    connection.destroy();
                 }
             } catch (error) {
                 message = `DB에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
@@ -426,6 +446,14 @@ module.exports = (app) => {
         });
     });
 
+    app.post('/time_set', async (req, res) => {
+        dialogTimeSet(req.body.trigger_id, req.body.user_name);
+        const attachments = [{
+            "title": `업데이트중입니다.\n완료되면 해당Bot에게 DM을 받습니다.`
+        }];
+        res.send({ update: { props: { attachments } } });
+    });
+
     app.post('/creat2', async (req, res) => {
         dialogNew(req.body.trigger_id, req.body.user_name);
         const attachments = [{
@@ -491,7 +519,7 @@ module.exports = (app) => {
                         if (userYesNo[0].SUCCESS == '0') {
                             try {
                                 let [results] = await connection.query(`INSERT INTO dataInfo(ROLE, ID, LastItemID, LastModify, LastCreate, userID, month, userTime)VALUES(?, ?, ?, ?, ?, ?, ?, ?)`, [`user`, `${req.body.submission.textprops}`, `${res.data.uri}`, `${date.getFullYear()}-${tempMonth}-${tempDate}`, `${date.getFullYear()}-${tempMonth}-${tempDate}`, `${req.body.user_id}`, `${tempMonth}`, 'A']);
-                                connection.release();
+                                connection.destroy();
                                 sendDM(req.body.user_id, `${req.body.submission.textprops}(${date.getFullYear()}.${tempMonth}) Item을 생성하였습니다.\n[Item 확인하기](${config.CodeBeamer_Tracker_Item_URL}${res.data.uri}) | [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
                             } catch (error) {
                                 sendDM(req.body.user_id, `Item 생성에 실패하였습니다. Query에 문제가 발생했습니다. 관리자에게 문의하시길 바랍니다.\n${error}`);
@@ -499,7 +527,7 @@ module.exports = (app) => {
                         } else {
                             try {
                                 let [results] = await connection.query(`UPDATE dataInfo SET LastItemID = '${res.data.uri}', LastModify = '${date.getFullYear()}-${tempMonth}-${tempDate}', LastCreate = '${date.getFullYear()}-${tempMonth}-${tempDate}', month = '${tempMonth}' WHERE ID = '${req.body.submission.textprops}'`);
-                                connection.release();
+                                connection.destroy();
                                 sendDM(req.body.user_id, `${req.body.submission.textprops}(${date.getFullYear()}.${tempMonth}) Item을 생성하였습니다.\n[Item 확인하기](${config.CodeBeamer_Tracker_Item_URL}${res.data.uri}) | [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
                             } catch (error) {
                                 sendDM(req.body.user_id, `Item 생성에 실패하였습니다. Query에 문제가 발생했습니다. 관리자에게 문의하시길 바랍니다.\n${error}`);
@@ -507,7 +535,7 @@ module.exports = (app) => {
                         }
                     } catch (error) {
                         sendDM(req.body.user_id, `Item 생성에 실패하였습니다. Query에 문제가 발생했습니다. 관리자에게 문의하시길 바랍니다.\n${error}`);
-                        connection.release();
+                        connection.destroy();
                     }
                 } catch (error) {
                     sendDM(req.body.user_id, `Item 생성에 실패하였습니다. Database에 문제가 발생했습니다. 관리자에게 문의하시길 바랍니다.\n${error}`);
@@ -569,7 +597,7 @@ module.exports = (app) => {
                             if (res.status == 200) {
                                 try {
                                     let [results] = await connection.query(`UPDATE dataInfo SET LastModify = '${date.getFullYear()}-${tempMonth}-${tempDate}', month = '${itemName.substring(itemName.length - 3, itemName.length - 1)}' WHERE ID = '${req.body.submission.textprops}'`);
-                                    connection.release();
+                                    connection.destroy();
                                     sendDM(req.body.user_id, `${itemName} Item에 내용추가를 완료했습니다.\n[Item 확인하기](${config.CodeBeamer_Tracker_Item_URL}${itemUri}) | [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
                                 } catch (error) {
                                     sendDM(req.body.user_id, `수정에 성공했으나 관련 정보를 Database에 Update하지 못 했습니다.\n관리자에게 문의하시길 바랍니다.`);
@@ -591,7 +619,7 @@ module.exports = (app) => {
                 }
             } catch (error) {
                 sendDM(req.body.user_id, `쿼리에서 에러가 발생하였습니다.\n관리자에게 문의하시길 바랍니다.`);
-                connection.release();
+                connection.destroy();
             }
         } catch (error) {
             sendDM(req.body.user_id, `Database 에러가 발생하였습니다.\n관리자에게 문의하시길 바랍니다.`);
@@ -618,6 +646,54 @@ module.exports = (app) => {
             .catch(error => {
                 console.log(error);
             });
+    }
+
+    const dialogTimeSet = async (id, username) => {
+        let dialogNewPost;
+        dialogNewPost = {
+            trigger_id: id,
+            url: `${config.Server_URL}/user_time_set`,
+            dialog: {
+                title: 'Notice 시간 변경하기',
+                elements: [
+                    {
+                        display_name: '변경자(절대 수정하지 마세요.)',
+                        name: 'text_username',
+                        type: 'text',
+                        default: `${username}`,
+                        optional: false,
+                    },
+                    {
+                        display_name: '시(00~23)',
+                        name: 'text_hours',
+                        type: 'text',
+                        subtype : 'number',
+                        min_length : 2,
+                        max_length : 2,
+                        default: `17`,
+                        help_text: '시간을 입력해주세요. 시간은 00시부터 23시까지 입력 가능합니다.',
+                        optional: false,
+                    },
+                    {
+                        display_name: '분(00~59)',
+                        name: 'text_minutes',
+                        type: 'text',
+                        subtype : 'number',
+                        min_length : 2,
+                        max_length : 2,
+                        default: `30`,
+                        help_text: '분을 입력해주세요. 분은 00분부터 59분까지 입력 가능합니다.',
+                        optional: false,
+                    },
+                ],
+                submit_label: '시간 변경',
+                notify_on_cancel: false,
+            }
+        }
+        axios.post(config.Finger_Chat_API_URL2, dialogNewPost, postHeader
+        ).catch(error => {
+            sendDM(config.FingerChat_Error_Notice_Member_ID, `API 에러가 발생하였습니다.\n${error}`);
+        });
     }
 
     const dialogNew = async (id, username) => {
@@ -738,10 +814,10 @@ module.exports = (app) => {
             try {
                 let [results] = await connection.query(`INSERT INTO dataInfo(ROLE, ID, LastItemID, LastModify, LastCreate, userID, month, userTime)VALUES('user', '${addedUserName}', null, '${date.getFullYear()}-${tempMonth}-${tempDate}', '${date.getFullYear()}-${tempMonth}-${tempDate}', null, 4, 'A');`);
                 message = `해당 User를 추가했습니다.`;
-                connection.release();
+                connection.destroy();
             } catch (error) {
                 message = `Query 에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
-                connection.release();
+                connection.destroy();
             }
         } catch (error) {
             message = `DB에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
@@ -753,12 +829,28 @@ module.exports = (app) => {
             let connection = await pool.getConnection(async conn => conn);
             try {
                 let [results] = await connection.query(`UPDATE dataInfo SET userTime = '${userType}' WHERE ID = '${userName}'`);
-                connection.release();
+                connection.destroy();
             } catch (error) {
-                connection.release();
+                connection.destroy();
             }
         } catch (error) {
             sendDM(config.FingerChat_Error_Notice_Member_ID, `setUserTime 함수에서 에러가 발생하였습니다.\n${error}`);
+        }
+    }
+
+    const userTimeSet = async (user_id, userName, hour, minutes) => {
+        console.log(userName, hour, minutes);
+        try {
+            let connection = await pool.getConnection(async conn => conn);
+            try {
+                let [results] = await connection.query(`UPDATE dataInfo SET userTime = '${hour}:${minutes}' WHERE ID = '${userName}'`);
+                sendDM(user_id, `알림 시간을 ${hour}시 ${minutes}분으로 설정하였습니다.`);
+                connection.destroy();
+            } catch (error) {
+                connection.destroy();
+            }
+        } catch (error) {
+            sendDM(config.FingerChat_Error_Notice_Member_ID, `userTimeSet 함수에서 에러가 발생하였습니다.\n${error}`);
         }
     }
 
@@ -767,7 +859,7 @@ module.exports = (app) => {
             let connection = await pool.getConnection(async conn => conn);
             try {
                 let [results] = await connection.query(`SELECT * FROM dataInfo;`);
-                connection.release();
+                connection.destroy();
                 userList = [`| No. | User ID | Role | LastItemID | 최종 수정일 | 최종 생성일 | Notice 시간 |\n`, `| --- | --- | --- | --- | --- | --- | --- |\n`];
                 if (results.length == 0) {
                     message = `Database에 등록된 User가 없습니다.`
@@ -784,7 +876,7 @@ module.exports = (app) => {
             } catch (error) {
                 console.log(error);
                 message = `Query 에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
-                connection.release();
+                connection.destroy();
             }
         } catch (error) {
             console.log(error);
@@ -803,14 +895,14 @@ module.exports = (app) => {
                 } else {
                     try {
                         let [results] = await connection.query(`SELECT ROLE FROM dataInfo WHERE ID='${userName}';`);
-                        connection.release();
+                        connection.destroy();
                         return `${results[0].ROLE}`;
                     } catch (error) {
                         return `에러가 발생하였습니다. 관리자에게 문의하세요.`;
                     }
                 }
             } catch (error) {
-                connection.release();
+                connection.destroy();
                 return `Query 에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
             }
         } catch (error) {
@@ -826,10 +918,11 @@ module.exports = (app) => {
                 connection.release();
                 if (userYesNo[0].SUCCESS == '0') {
                     message = `해당 User가 존재하지 않습니다.`;
+                    connection.destroy();
                 } else {
                     try {
                         let [results] = await connection.query(`UPDATE dataInfo SET ROLE = '${role}' WHERE ID = '${userName}'`);
-                        connection.release();
+                        connection.destroy();
                         message = `해당 User가 **'${role}'**으로 설정되었습니다.`;
                     } catch (error) {
                         message = `에러가 발생하였습니다. 관리자에게 문의하세요.`;
@@ -837,7 +930,7 @@ module.exports = (app) => {
                 }
             } catch (error) {
                 message = `Query 에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
-                connection.release();
+                connection.destroy();
             }
         } catch (error) {
             message = `DB에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
@@ -853,10 +946,11 @@ module.exports = (app) => {
                 connection.release();
                 if (userYesNo[0].SUCCESS == '0') {
                     message = `해당 User가 존재하지 않습니다.`;
+                    connection.destroy();
                 } else {
                     try {
                         let [results] = await connection.query(`DELETE FROM dataInfo WHERE ID = '${userName}'`);
-                        connection.release();
+                        connection.destroy();
                         message = `해당 User가 Database에서 삭제되었습니다.`;
                     } catch (error) {
                         message = `에러가 발생하였습니다. 관리자에게 문의하세요.`;
@@ -864,7 +958,7 @@ module.exports = (app) => {
                 }
             } catch (error) {
                 message = `Query 에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
-                connection.release();
+                connection.destroy();
             }
         } catch (error) {
             message = `DB에서 에러가 발생하였습니다. 관리자에게 문의하세요.`;
@@ -878,18 +972,19 @@ module.exports = (app) => {
                 let [monthYesNo] = await connection.query(`SELECT EXISTS (SELECT * FROM dataInfo WHERE ID='${userName}') AS SUCCESS;`);
                 connection.release();
                 if (monthYesNo[0].SUCCESS == '0') {
+                    connection.destroy();
                     return '0';
                 } else {
                     try {
                         let [itemMonth] = await connection.query(`SELECT month FROM dataInfo WHERE ID = '${userName}'`);
-                        connection.release();
+                        connection.destroy();
                         return itemMonth[0].month;
                     } catch (error) {
                         return 'QueryError';
                     }
                 }
             } catch (error) {
-                connection.release();
+                connection.destroy();
                 return 'QueryError';
             }
         } catch (error) {
@@ -904,18 +999,19 @@ module.exports = (app) => {
                 let [userYesNo] = await connection.query(`SELECT EXISTS (SELECT * FROM dataInfo WHERE ID='${userName}') AS SUCCESS;`);
                 connection.release();
                 if (userYesNo[0].SUCCESS == '0') {
+                    connection.destroy();
                     return 'DataBase에 등록되지 않은 User입니다. 먼저 item을 생성하여 DataBase에 User를 등록하여주세요.';
                 } else {
                     try {
                         let [results] = await connection.query(`SELECT userTime FROM dataInfo WHERE ID = '${userName}'`);
-                        connection.release();
+                        connection.destroy();
                         return results[0].userTime;
                     } catch (error) {
                         return 'QueryError';
                     }
                 }
             } catch (error) {
-                connection.release();
+                connection.destroy();
                 return 'QueryError';
             }
         } catch (error) {
@@ -947,7 +1043,7 @@ module.exports = (app) => {
                         }
                         try {
                             let [results] = await connection.query(`SELECT ID, LastModify, LastItemID FROM dataInfo;`);
-                            connection.release();
+                            connection.destroy();
                             userList = [`| No. | User ID | LastItemID | 최종 수정일 |\n`, `| --- | --- | --- | --- |\n`];
                             for (let i = 0; i < results.length; i++) {
                                 if (parseInt((dt.parse(today, 'YYYYMMDD').getTime() - dt.parse(results[i].LastModify.replace(/-/gi, ""), 'YYYYMMDD').getTime()) / (24 * 3600 * 1000)) >= 7) {
@@ -962,14 +1058,14 @@ module.exports = (app) => {
                             }
                         } catch (error) {
                             sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                            connection.release();
+                            connection.destroy();
                         }
                     } else {
-                        connection.release();
+                        connection.destroy();
                     }
                 } catch (error) {
                     sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                    connection.release();
+                    connection.destroy();
                 }
             } catch (error) {
                 sendDM(config.FingerChat_Error_Notice_Member_ID, `Database에서 에러가 발생하였습니다.\n${error}`);
@@ -984,7 +1080,7 @@ module.exports = (app) => {
                 let connection = await pool.getConnection(async conn => conn);
                 try {
                     let [results] = await connection.query(`SELECT ID, LastModify, userID, userTime FROM dataInfo;`);
-                    connection.release();
+                    connection.destroy();
                     for (let i = 0; i < results.length; i++) {
                         if(results[i].userTime == 'A'){
                             sendDM(results[i].userID, `@${results[i].ID}님, 오늘의 업무일지를 작성해주세요. 현재 ${results[i].LastModify}일까지 일지가 작성되어있습니다. [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
@@ -992,14 +1088,14 @@ module.exports = (app) => {
                     }
                 } catch (error) {
                     sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                    connection.release();
+                    connection.destroy();
                 }
             } catch (error) {
                 sendDM(config.FingerChat_Error_Notice_Member_ID, `Database에서 에러가 발생하였습니다.\n${error}`);
             }
         })
     }
-    reminderGroupAFri();
+    //reminderGroupAFri();
 
     const reminderGroupBFri = async () => {
         schedule.scheduleJob({ hour: 17, minute: 30, dayOfWeek: [5] }, async () => {
@@ -1007,7 +1103,7 @@ module.exports = (app) => {
                 let connection = await pool.getConnection(async conn => conn);
                 try {
                     let [results] = await connection.query(`SELECT ID, LastModify, userID, userTime FROM dataInfo;`);
-                    connection.release();
+                    connection.destroy();
                     for (let i = 0; i < results.length; i++) {
                         if(results[i].userTime == 'B'){
                             sendDM(results[i].userID, `@${results[i].ID}님, 오늘의 업무일지를 작성해주세요. 현재 ${results[i].LastModify}일까지 일지가 작성되어있습니다. [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
@@ -1015,14 +1111,14 @@ module.exports = (app) => {
                     }
                 } catch (error) {
                     sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                    connection.release();
+                    connection.destroy();
                 }
             } catch (error) {
                 sendDM(config.FingerChat_Error_Notice_Member_ID, `Database에서 에러가 발생하였습니다.\n${error}`);
             }
         })
     }
-    reminderGroupBFri();
+    //reminderGroupBFri();
 
     const reminderGroupA = async () => {
         schedule.scheduleJob({ hour: 17, minute: 30, dayOfWeek: [1, 2, 3, 4] }, async () => {
@@ -1030,7 +1126,7 @@ module.exports = (app) => {
                 let connection = await pool.getConnection(async conn => conn);
                 try {
                     let [results] = await connection.query(`SELECT ID, LastModify, userID, userTime FROM dataInfo;`);
-                    connection.release();
+                    connection.destroy();
                     for (let i = 0; i < results.length; i++) {
                         if(results[i].userTime == 'A'){
                             sendDM(results[i].userID, `@${results[i].ID}님, 오늘의 업무일지를 작성해주세요. 현재 ${results[i].LastModify}일까지 일지가 작성되어있습니다. [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
@@ -1038,14 +1134,14 @@ module.exports = (app) => {
                     }
                 } catch (error) {
                     sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                    connection.release();
+                    connection.destroy();
                 }
             } catch (error) {
                 sendDM(config.FingerChat_Error_Notice_Member_ID, `Database에서 에러가 발생하였습니다.\n${error}`);
             }
         })
     }
-    reminderGroupA();
+    //reminderGroupA();
 
     const reminderGroupB = async () => {
         schedule.scheduleJob({ hour: 18, minute: 00, dayOfWeek: [1, 2, 3, 4] }, async () => {
@@ -1053,7 +1149,7 @@ module.exports = (app) => {
                 let connection = await pool.getConnection(async conn => conn);
                 try {
                     let [results] = await connection.query(`SELECT ID, LastModify, userID, userTime FROM dataInfo;`);
-                    connection.release();
+                    connection.destroy();
                     for (let i = 0; i < results.length; i++) {
                         if(results[i].userTime == 'B'){
                             sendDM(results[i].userID, `@${results[i].ID}님, 오늘의 업무일지를 작성해주세요. 현재 ${results[i].LastModify}일까지 일지가 작성되어있습니다. [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
@@ -1061,14 +1157,14 @@ module.exports = (app) => {
                     }
                 } catch (error) {
                     sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                    connection.release();
+                    connection.destroy();
                 }
             } catch (error) {
                 sendDM(config.FingerChat_Error_Notice_Member_ID, `Database에서 에러가 발생하였습니다.\n${error}`);
             }
         })
     }
-    reminderGroupB();
+    //reminderGroupB();
 
     const asyncWithDatabase = async () => {
         schedule.scheduleJob({ hour: 17, minute: 44, dayOfWeek: [1, 2, 3, 4, 5] }, async () => {
@@ -1087,17 +1183,18 @@ module.exports = (app) => {
                             },
                         }).then(async (data) => {
                             try {
+                                let connection = await pool.getConnection(async conn => conn);
                                 let [result] = await connection.query(`UPDATE dataInfo SET LastModify = '${data.data[data.data.length - 1].submittedAt.slice(0, 10)}' WHERE ID = '${results[i].ID}'`);
-                                connection.release();
+                                connection.destroy();
                             } catch (error) {
                                 sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                                connection.release();
+                                connection.destroy();
                             }
                         });
                     }
                 } catch (error) {
                     sendDM(config.FingerChat_Error_Notice_Member_ID, `쿼리에서 에러가 발생하였습니다.\n${error}`);
-                    connection.release();
+                    connection.destroy();
                 }
             } catch (error) {
                 sendDM(config.FingerChat_Error_Notice_Member_ID, `Database에서 에러가 발생하였습니다.\n${error}`);

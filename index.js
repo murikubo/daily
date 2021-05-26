@@ -6,14 +6,18 @@ let configFile = require('./config/config.json');
 app.use(bodyparser.urlencoded({'extended':'true'}));
 app.use(bodyparser.json());
 
-// require('./router')(app);
+const noticeCheck = require('./router/notice');
 // app.listen(configFile.Use_Port, () => console.log('app listening on port ' + configFile.Use_Port));
 
-
+setInterval(
+    () => {
+        noticeCheck();
+    }, 60000
+);
 
 Promise.resolve()
 .then(() => {
-    app.listen(configFile.Use_Port, () => console.log(`app listening on port ${configFile.Use_Port}`))
+    app.listen(configFile.Use_Port/* , () => console.log(`app listening on port ${configFile.Use_Port}`) */)
     app.get('/', (req, res) => res.send('You are listening to radio happy!'))
     return true;
 }).then(() => {
