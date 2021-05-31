@@ -668,7 +668,6 @@ module.exports = (app) => {
                         display_name: '시(00~23)',
                         name: 'text_hours',
                         type: 'text',
-                        subtype : 'number',
                         min_length : 2,
                         max_length : 2,
                         default: `17`,
@@ -679,7 +678,6 @@ module.exports = (app) => {
                         display_name: '분(00~59)',
                         name: 'text_minutes',
                         type: 'text',
-                        subtype : 'number',
                         min_length : 2,
                         max_length : 2,
                         default: `30`,
@@ -840,7 +838,6 @@ module.exports = (app) => {
     }
 
     const userTimeSet = async (user_id, userName, hour, minutes) => {
-        console.log(userName, hour, minutes);
         try {
             let connection = await pool.getConnection(async conn => conn);
             try {

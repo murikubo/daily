@@ -67,8 +67,10 @@ module.exports = async (app) => {
                 if(fridayCheck == '5'){
                     noticeTime.setMinutes(noticeTime.getMinutes() - 30);
                 }
-                if ( Date.now() >= noticeTime.getTime() && Date.now() <= noticeTime.getTime() + 59999) {
-                    sendDM(results[i].userID, `@${results[i].ID}님, 오늘의 업무일지를 작성해주세요. 현재 ${results[i].LastModify}일까지 일지가 작성되어있습니다. [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
+                if(fridayCheck != '6' || fridayCheck != '0'){
+                    if ( Date.now() >= noticeTime.getTime() && Date.now() <= noticeTime.getTime() + 59999) {
+                        sendDM(results[i].userID, `@${results[i].ID}님, 오늘의 업무일지를 작성해주세요. 현재 ${results[i].LastModify}일까지 일지가 작성되어있습니다. [Tracker 확인하기](${config.CodeBeamer_Tracker_URL})`);
+                    }
                 }
             }
         } catch (error) {
