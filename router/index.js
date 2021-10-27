@@ -40,7 +40,7 @@ let actions = [
 ];
 
 module.exports = (app) => {
-    app.post('/bot_test', async (req, res) => {
+    app.post('/dailyjournal', async (req, res) => {
         let date = new Date();
         let reqOption = req.body.text;
         let tempString = reqOption.substring(0, 7);
