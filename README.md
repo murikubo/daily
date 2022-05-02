@@ -1,6 +1,6 @@
 # codeBeamer Daily Journal Bot
 
-#docker 환경변수 setting시 code 변경법
+# docker 환경변수 setting시 code 변경법
 constants.js 파일 생성
 ```
 const checkEnv = (envVar) => {
