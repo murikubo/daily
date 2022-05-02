@@ -12,26 +12,27 @@ const checkEnv = (envVar) => {
     process.exit(1);
 }
 
-const weather_apikey = checkEnv('WEATHER_KEY'); 
-const bot_url = checkEnv('BOT_URL');
-const mattermost_token = checkEnv('MATTERMOST_TOKEN'); 
-const mattermost_url = checkEnv('MATTERMOST_URL');
-const channel_id = checkEnv('CHANNEL_ID');
-const port = checkEnv('PORT');
-
+const <var1> = checkEnv('<DOCKER_SETTING_ENV_1>'); 
+const <var2> = checkEnv('<DOCKER_SETTING_ENV_2>');
+const <var3> = checkEnv('<DOCKER_SETTING_ENV_3>'); 
+const <var4> = checkEnv('<DOCKER_SETTING_ENV_4>');
+const <var5> = checkEnv('<DOCKER_SETTING_ENV_5>');
+const <var6> = checkEnv('<DOCKER_SETTING_ENV_6>');
+//var : 변수 이름
+//DOCKER_SETTING_ENV : docker 환경변수
 module.exports = {
-    weather_apikey,
-    mattermost_token,
-    mattermost_url,
-    bot_url,
-    channel_id,
-    port,
+    <var1>,
+    <var2>,
+    <var3>,
+    <var4>,
+    <var5>,
+    <var6>,
 }
 ```
 다음과 같은 형식으로 변수 지정 및 export
 이후 사용할 파일 내에서
 ```
-const { mattermost_token, mattermost_url, channel_id } = require("./constants");
+const { <var1>, <var2>, <var5> } = require("./constants");
 ```
 형식으로 값 받아와 사용.
 
