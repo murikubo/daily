@@ -3,6 +3,15 @@
 #docker 환경변수 setting시 code 변경법
 constants.js 파일 생성
 ```
+const checkEnv = (envVar) => {
+    if(process.env[envVar]) {
+        return process.env[envVar];
+    }
+
+    console.log(`The ${envVar} variable has not been set.`);
+    process.exit(1);
+}
+
 const weather_apikey = checkEnv('WEATHER_KEY'); 
 const bot_url = checkEnv('BOT_URL');
 const mattermost_token = checkEnv('MATTERMOST_TOKEN'); 
