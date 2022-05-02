@@ -1,5 +1,35 @@
 # codeBeamer Daily Journal Bot
 
+#docker 환경변수 setting시 code 변경법
+constants.js 파일 생성
+```
+const weather_apikey = checkEnv('WEATHER_KEY'); 
+const bot_url = checkEnv('BOT_URL');
+const mattermost_token = checkEnv('MATTERMOST_TOKEN'); 
+const mattermost_url = checkEnv('MATTERMOST_URL');
+const channel_id = checkEnv('CHANNEL_ID');
+const port = checkEnv('PORT');
+
+module.exports = {
+    weather_apikey,
+    mattermost_token,
+    mattermost_url,
+    bot_url,
+    channel_id,
+    port,
+}
+```
+다음과 같은 형식으로 변수 지정 및 export
+이후 사용할 파일 내에서
+```
+const { mattermost_token, mattermost_url, channel_id } = require("./constants");
+```
+형식으로 값 받아와 사용.
+
+
+
+
+
 ## User 사용법 및 관리자 명령어
 [hub.slexn.com SLEXN inside wiki - 일일업무일지](http://hub.slexn.com/cb/wiki/14612)
 
